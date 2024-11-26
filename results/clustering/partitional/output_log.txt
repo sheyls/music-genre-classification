@@ -1,0 +1,152 @@
+Calculating WCSS for Elbow Method...
+Optimal number of clusters determined: 2
+Running K-Means Clustering...
+--- K-Means Clustering Evaluation ---
+Silhouette Score: 0.202
+Davies-Bouldin Index: 1.949
+Calinski-Harabasz Score: 3042.294
+--- Cluster Statistics ---
+        Popularity                                          ... Class                      
+             count      mean       std       min       25%  ...   min  25%  50%   75%   max
+Cluster                                                     ...                            
+0          11767.0  0.087352  0.996263 -2.526859 -0.573888  ...   0.0  5.0  8.0  10.0  10.0
+1           4148.0 -0.247798  0.968802 -2.526859 -0.869793  ...   0.0  2.0  6.0   9.0  10.0
+
+[2 rows x 104 columns]
+--- Feature Importance ---
+acousticness          0.915790
+energy                0.856614
+loudness              0.721211
+duration_in min/ms    0.355468
+valence               0.280052
+time_signature        0.219700
+speechiness           0.206173
+tempo                 0.204128
+Popularity            0.167575
+liveness              0.158102
+danceability          0.099642
+mode                  0.076045
+dtype: float64
+Cluster 0:
+  Class 10: 3730 instances
+    Representative Songs:
+      Artist: Boston, Track: Hitch a Ride
+      Artist: Red Hot Chili Peppers, Track: Nobody Weird Like Me - Remastered
+  Class 9: 1653 instances
+    Representative Songs:
+      Artist: Dudu Aharon, Track: ◊ì◊ï◊ì◊ï, ◊ô◊ê◊ú◊ú◊î ◊ô◊ê◊ú◊ú◊î
+      Artist: Dudu Aharon, Track: ◊ú◊ê ◊ô◊õ◊ï◊ú ◊ë◊ú◊¢◊ì◊ô◊ô◊ö
+  Class 8: 1649 instances
+    Representative Songs:
+      Artist: Professional Murder Music, Track: Slow
+      Artist: Rainbow, Track: Since You Been Gone
+  Class 6: 1593 instances
+    Representative Songs:
+      Artist: The Raincoats, Track: No Side to Fall In
+      Artist: The Stooges, Track: Search and Destroy - Iggy Pop Mix
+  Class 5: 1275 instances
+    Representative Songs:
+      Artist: Bruno Mars, Track: That's What I Like (feat. Gucci Mane)
+      Artist: Deno, Track: Lingo (feat. J.I & Chunkz)
+  Class 1: 738 instances
+    Representative Songs:
+      Artist: Clairmont The Second, Track: intres-ting
+      Artist: duendita, Track: Open Eyes
+  Class 2: 732 instances
+    Representative Songs:
+      Artist: Solomon Burke, Track: None Of Us Are Free
+      Artist: Elmore James, Track: Madison Blues
+  Class 4: 220 instances
+    Representative Songs:
+      Artist: Dan + Shay, Track: Glad You Exist
+      Artist: Morgan Evans, Track: Love Is Real
+  Class 0: 115 instances
+    Representative Songs:
+      Artist: Advaita, Track: Ghir Ghir
+      Artist: Shubha Mudgal, Track: Awakning Main Sutti
+  Class 3: 57 instances
+    Representative Songs:
+      Artist: K. J. Yesudas, Track: Do Din Ki Jawani - Adalat / Soundtrack Version
+      Artist: Pritam, Arijit Singh, Track: Hardum Humdum (From "Ludo")
+  Class 7: 5 instances
+    Representative Songs:
+      Artist: Benny Carter, Track: Crazy Rhythm
+      Artist: Clifford Brown, Max Roach Quintet, Track: If I Love Again
+Cluster 1:
+  Class 10: 631 instances
+    Representative Songs:
+      Artist: Berry Sakharof, Track: ◊†◊§◊™◊ú◊ô ◊î◊ì◊í
+      Artist: The Stranglers, Track: Golden Brown
+  Class 9: 609 instances
+    Representative Songs:
+      Artist: Eyal Golan, Track: ◊ß◊®◊ï◊ë◊î ◊ê◊ú◊ô◊ô
+      Artist: Eden Ben Zaken, Track: ◊û◊†◊í◊ô◊†◊î
+  Class 7: 547 instances
+    Representative Songs:
+      Artist: Harald Lassen, Bram de Looze, Track: How it feels pt. 2
+      Artist: The Ayoub Sisters, Track: Mother's Pride
+  Class 6: 539 instances
+    Representative Songs:
+      Artist: Howie Lee, Track: Birdy Island
+      Artist: Townes Van Zandt, Track: Waitin' Around To Die
+  Class 0: 488 instances
+    Representative Songs:
+      Artist: IndianRaga, Akshay Anantapadmanabhan, Madhu Iyer, Sri Poornima Krishna Emani, Track: Swagatham Krishna - Mohanam - Adi
+      Artist: How Lucky, Track: Kurt Vile, John Prine
+  Class 2: 466 instances
+    Representative Songs:
+      Artist: Mighty Sam McClain, Track: When the Hurt Is Over
+      Artist: Keller Williams, Track: Right Here
+  Class 3: 344 instances
+    Representative Songs:
+      Artist: Mohammed Rafi, Track: Meri Dosti Mera Pyar
+      Artist: Vani Jairam, Track: Bole Re Papihara
+  Class 1: 191 instances
+    Representative Songs:
+      Artist: benny blanco, Track: Care (with Omar Apollo)
+      Artist: Sarah Palu, Track: Ikivirta
+  Class 4: 154 instances
+    Representative Songs:
+      Artist: Randy Travis, Track: On the Other Hand
+      Artist: Merle Haggard, Track: It's Not Love (But It's Not Bad)
+  Class 5: 117 instances
+    Representative Songs:
+      Artist: Ravid Plotnik, Track: ◊†◊¢◊†◊¢
+      Artist: Langston Hughes, Track: I Have Known Rivers
+  Class 8: 62 instances
+    Representative Songs:
+      Artist: Garmarna, Track: Tv√• Systrar
+      Artist: Suldusk, Track: The Elm
+Cluster 0: Closest song to centroid:
+  Artist: Briston Maroney
+  Track: Sinkin'
+  Distance to Centroid: 1.121240675725909
+Cluster 1: Closest song to centroid:
+  Artist: Wanda Jackson
+  Track: Right Or Wrong
+  Distance to Centroid: 1.2745235553111787
+--- Class Percentages per Cluster ---
+Cluster 0:
+  Class 10: 85.53% of total instances
+  Class 9: 73.08% of total instances
+  Class 8: 96.38% of total instances
+  Class 6: 74.72% of total instances
+  Class 5: 91.59% of total instances
+  Class 1: 79.44% of total instances
+  Class 2: 61.10% of total instances
+  Class 4: 58.82% of total instances
+  Class 0: 19.07% of total instances
+  Class 3: 14.21% of total instances
+  Class 7: 0.91% of total instances
+Cluster 1:
+  Class 10: 14.47% of total instances
+  Class 9: 26.92% of total instances
+  Class 7: 99.09% of total instances
+  Class 6: 25.28% of total instances
+  Class 0: 80.93% of total instances
+  Class 2: 38.90% of total instances
+  Class 3: 85.79% of total instances
+  Class 1: 20.56% of total instances
+  Class 4: 41.18% of total instances
+  Class 5: 8.41% of total instances
+  Class 8: 3.62% of total instances
