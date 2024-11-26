@@ -84,13 +84,14 @@ class UnsupervisedAlgorithms(MLAlgorithms):
         print(df.groupby('Cluster').describe())
 
         for feature in self.feature_names:
+            formatted_feature = feature.replace(" ", "_").replace("/", "_")
             plt.figure(figsize=(8, 5))
             sns.boxplot(x='Cluster', y=feature, data=df)
             plt.title(f"{feature} by Cluster")
             plt.xlabel("Cluster")
             plt.ylabel(feature)
             plt.grid(True)
-            output_path = os.path.join("results/clustering/partitional", f"{feature.replace(' ', '_')}_by_Cluster.png")
+            output_path = os.path.join(f"results/clustering/partitional/{formatted_feature}.png")
             plt.savefig(output_path)
             plt.close()
             print(f"Saved: {output_path}")
