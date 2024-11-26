@@ -1,0 +1,132 @@
+Running Probabilistic Clustering (GMM)...
+--- Probabilistic Clustering Evaluation ---
+Silhouette Score: 0.230
+Davies-Bouldin Index: 3.098
+Calinski-Harabasz Score: 695.882
+Saved: results/clustering/partitional/Probabilistic_Clusters.png
+Saved: results/clustering/partitional/Cluster_Size_Distribution.png
+--- Cluster Statistics ---
+        Popularity                                                    \
+             count      mean       std       min       25%       50%   
+Cluster                                                                
+0           1098.0 -0.261447  0.910400 -2.526859 -0.869793 -0.218802   
+1          14173.0  0.032538  1.000293 -2.526859 -0.633069  0.006711   
+2            644.0 -0.270319  1.034656 -2.526859 -0.928973 -0.248393   
+
+                            danceability                                \
+              75%       max        count      mean       std       min   
+Cluster                                                                  
+0        0.313826  2.503521       1098.0 -0.773815  0.930269 -2.701600   
+1        0.728093  2.621883      14173.0  0.075581  0.970238 -2.700997   
+2        0.373007  2.621883        644.0 -0.344047  1.122389 -2.626176   
+
+                                                  energy                      \
+              25%       50%       75%       max    count      mean       std   
+Cluster                                                                        
+0       -1.448055 -0.755664 -0.110036  2.629359   1098.0 -1.313145  0.949700   
+1       -0.592749  0.064947  0.758847  2.671597  14173.0  0.099431  0.928965   
+2       -1.144851 -0.333291  0.330440  2.556952    644.0  0.050626  1.013422   
+
+                                                          loudness            \
+              min       25%       50%       75%       max    count      mean   
+Cluster                                                                        
+0       -2.739239 -2.185327 -1.379989 -0.607117  1.110378   1098.0 -1.349325   
+1       -2.684029 -0.523336  0.234875  0.879982  1.449688  14173.0  0.106512   
+2       -2.617005 -0.746401  0.123866  1.011936  1.441310    644.0 -0.043526   
+
+                                                                        mode  \
+              std       min       25%       50%       75%       max    count   
+Cluster                                                                        
+0        1.672075 -6.870795 -2.534196 -0.812267 -0.041820  1.382325   1098.0   
+1        0.845353 -4.890934 -0.312854  0.273817  0.708154  2.286096  14173.0   
+2        0.932594 -4.947237 -0.521125  0.093941  0.586408  1.757922    644.0   
+
+                                                                         \
+             mean       std       min       25%     50%     75%     max   
+Cluster                                                                   
+0        0.044883  0.986853 -1.316483 -1.316483  0.7596  0.7596  0.7596   
+1        0.000239  0.999969 -1.316483 -1.316483  0.7596  0.7596  0.7596   
+2       -0.081794  1.020037 -1.316483 -1.316483  0.7596  0.7596  0.7596   
+
+        speechiness                                                    \
+              count      mean       std       min       25%       50%   
+Cluster                                                                 
+0            1098.0 -0.486636  0.114418 -0.671905 -0.565449 -0.511636   
+1           14173.0 -0.028912  0.878489 -0.680094 -0.536203 -0.380612   
+2             644.0  1.465997  2.268032 -0.644999 -0.191389  0.320128   
+
+                             acousticness                                \
+              75%        max        count      mean       std       min   
+Cluster                                                                   
+0       -0.432086   0.402018       1098.0  1.101285  1.125157 -0.822157   
+1        0.041704   4.671974      14173.0 -0.088430  0.934304 -0.822175   
+2        3.095600  10.228766        644.0  0.068487  1.050514 -0.822175   
+
+                                                liveness                      \
+              25%       50%       75%       max    count      mean       std   
+Cluster                                                                        
+0        0.038387  1.523665  2.130239  2.320335   1098.0 -0.434459  0.335175   
+1       -0.808671 -0.580492  0.430412  2.320335  14173.0  0.015081  1.012743   
+2       -0.817553 -0.462490  0.871341  2.317180    644.0  0.408837  1.207902   
+
+                                                           valence            \
+              min       25%       50%       75%       max    count      mean   
+Cluster                                                                        
+0       -1.004546 -0.616543 -0.530925 -0.356891  3.136216   1098.0 -0.803338   
+1       -1.146880 -0.615456 -0.406615  0.401399  4.994648  14173.0  0.066938   
+2       -1.048676 -0.555787  0.078193  0.987209  4.926278    644.0 -0.103481   
+
+                                                                       tempo  \
+              std       min       25%       50%       75%       max    count   
+Cluster                                                                        
+0        0.834023 -1.911939 -1.439206 -0.961069 -0.342608  1.995070   1098.0   
+1        0.985059 -1.928570 -0.703290  0.053415  0.826751  2.094856  14173.0   
+2        0.982956 -1.874104 -0.921570 -0.110815  0.657324  1.990913    644.0   
+
+                                                                               \
+             mean       std       min       25%       50%       75%       max   
+Cluster                                                                         
+0       -0.026979  1.140894 -2.563134 -0.945375 -0.141533  0.780236  2.678347   
+1       -0.003114  0.980168 -2.715889 -0.781097 -0.059657  0.632135  2.698032   
+2        0.114540  1.158013 -2.399106 -0.770876 -0.065466  0.980160  2.653181   
+
+        duration_in min/ms                                                    \
+                     count      mean       std       min       25%       50%   
+Cluster                                                                        
+0                   1098.0 -0.089761  1.817433 -1.740514 -1.740483 -0.011265   
+1                  14173.0  0.005762  0.904623 -1.740518 -0.275098  0.086465   
+2                    644.0  0.026235  1.031555 -1.740518 -0.373452  0.061686   
+
+                             time_signature                                    \
+              75%        max          count      mean           std       min   
+Cluster                                                                         
+0        0.641079  11.132063         1098.0 -1.916288  2.193822e+00 -7.934053   
+1        0.454311   7.581753        14173.0  0.213304  2.775655e-17  0.213304   
+2        0.577136   6.539851          644.0 -1.427132  2.688255e+00 -7.934053   
+
+                                                   Class                      \
+              25%       50%       75%       max    count      mean       std   
+Cluster                                                                        
+0       -2.502482 -2.502482  0.213304  2.929090   1098.0  5.910747  3.282957   
+1        0.213304  0.213304  0.213304  0.213304  14173.0  6.828971  3.157984   
+2       -2.502482 -2.502482  0.213304  2.929090    644.0  6.240683  2.839319   
+
+                                    
+         min  25%  50%   75%   max  
+Cluster                             
+0        0.0  2.0  7.0   9.0  10.0  
+1        0.0  5.0  8.0  10.0  10.0  
+2        0.0  5.0  6.0   8.0  10.0  
+Saved: results/clustering/partitional/Popularity.png
+Saved: results/clustering/partitional/danceability.png
+Saved: results/clustering/partitional/energy.png
+Saved: results/clustering/partitional/loudness.png
+Saved: results/clustering/partitional/mode.png
+Saved: results/clustering/partitional/speechiness.png
+Saved: results/clustering/partitional/acousticness.png
+Saved: results/clustering/partitional/liveness.png
+Saved: results/clustering/partitional/valence.png
+Saved: results/clustering/partitional/tempo.png
+Saved: results/clustering/partitional/duration_in_min_ms.png
+Saved: results/clustering/partitional/time_signature.png
+Saved cluster probabilities to: results/clustering/probabilistic/Cluster_Probabilities.csv

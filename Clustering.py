@@ -12,6 +12,9 @@ import seaborn as sns
 import os
 import contextlib
 
+pd.set_option('display.max_columns', None)
+pd.set_option('display.max_rows', None)
+pd.set_option('display.max_colwidth', None)
 
 class MLAlgorithms:
     def __init__(self, X, feature_names=None):
@@ -292,13 +295,18 @@ class HierarchicalClustering(UnsupervisedAlgorithms):
         self.evaluate_clustering(clusters, "Hierarchical")
         return model, clusters
 
-    def plot_dendrogram(self, method='ward'):
+    def plot_dendrogram(self, method='ward', annotate=False, labels=None):
         """Plots and saves the dendrogram for hierarchical clustering."""
         from scipy.cluster.hierarchy import dendrogram, linkage
         print("Generating Dendrogram...")
         Z = linkage(self.X, method=method)
         plt.figure(figsize=(10, 7))
-        dendrogram(Z)
+        dendrogram(
+            Z,
+            labels=labels if annotate else None,
+            leaf_rotation=90,
+            leaf_font_size=10,
+        )
         plt.title("Hierarchical Clustering Dendrogram")
         plt.xlabel("Sample Index")
         plt.ylabel("Distance")
@@ -306,6 +314,119 @@ class HierarchicalClustering(UnsupervisedAlgorithms):
         plt.savefig(output_path)
         plt.close()
         print(f"Saved dendrogram to: {output_path}")
+
+    def determine_optimal_clusters_dendrogram_distances(self, max_clusters=15, method='ward'):
+        """
+        Visualizes the merge distances for hierarchical clustering within a limited number of clusters
+        to help determine the optimal number of clusters.
+        """
+
+        print("Calculating distances for hierarchical clustering...")
+
+        # Compute linkage matrix
+        Z = linkage(self.X, method=method)
+
+        # Extract merge distances
+        merge_distances = Z[:, 2]  # Distances between clusters at each merge
+        num_clusters = range(1, max_clusters + 1)  # Ascending order: 1, 2, ..., max_clusters
+
+        # Limit the number of clusters for the plot
+        if max_clusters > len(merge_distances):
+            print(f"Warning: max_clusters ({max_clusters}) exceeds the number of merges.")
+            max_clusters = len(merge_distances)
+
+        limited_distances = merge_distances[-max_clusters:]  # Select the last 'max_clusters' distances
+
+        # Plot the distances
+        plt.figure(figsize=(10, 6))
+        plt.plot(num_clusters, limited_distances[::-1], marker='o', linestyle='--', label='Merge Distances')
+        plt.title("Cluster Merge Distances (Hierarchical Clustering)")
+        plt.xlabel("Number of Clusters")
+        plt.ylabel("Merge Distance")
+        plt.grid(True)
+
+        # Save the plot
+        output_path = os.path.join("results/clustering/hierarchical", "Dendrogram_Distances_Limited.png")
+        plt.savefig(output_path)
+        plt.show()
+        print(f"Saved limited merge distance plot to: {output_path}")
+
+        # Find the "elbow" point in the limited range
+        # Identify where the largest drop in distances occurs
+        deltas = np.diff(limited_distances[::-1])  # Differences between consecutive distances
+        elbow_point = np.argmax(np.abs(deltas)) + 2  # +1 to account for cluster numbering
+        print(f"Optimal number of clusters determined based on distances: {elbow_point}")
+        return elbow_point
+
+
+    def get_merge_details(self, method='ward'):
+        """Extracts and prints merge distances and cluster sizes at each step."""
+        from scipy.cluster.hierarchy import linkage
+        print("\n--- Merge Details ---")
+        Z = linkage(self.X, method=method)
+        merge_distances = Z[:, 2]
+        cluster_sizes = Z[:, 3]
+        for i, (distance, size) in enumerate(zip(merge_distances, cluster_sizes)):
+            print(f"Merge {i+1}: Distance = {distance:.3f}, Cluster Size = {int(size)}")
+
+    def representative_instances(self, clusters, original_df):
+        """Identifies representative instances closest to the cluster centroid."""
+        representative_instances = {}
+        for cluster_id in np.unique(clusters):
+            cluster_data = self.X[clusters == cluster_id]
+            centroid = cluster_data.mean(axis=0)
+            distances = np.linalg.norm(cluster_data - centroid, axis=1)
+            closest_index = np.argmin(distances)
+            representative_row = original_df[clusters == cluster_id].iloc[closest_index]
+            representative_instances[cluster_id] = {
+                "Artist": representative_row['Artist Name'],
+                "Track": representative_row['Track Name'],
+                "Distance to Centroid": distances[closest_index],
+            }
+        print("\n--- Representative Instances ---")
+        for cluster_id, info in representative_instances.items():
+            print(f"Cluster {cluster_id}:")
+            print(f"  Artist: {info['Artist']}, Track: {info['Track']}")
+            print(f"  Distance to Centroid: {info['Distance to Centroid']:.4f}")
+        return representative_instances
+
+    def class_distribution_per_cluster(self, clusters, original_df):
+        """
+        Calculates the percentage distribution of each class across clusters.
+
+        For each class, determines what percentage of its total instances belong to each cluster.
+        """
+        class_distributions = {}
+        total_per_class = original_df['Class'].value_counts()  # Total instances per class
+
+        for cls in total_per_class.index:
+            cls_data = original_df[original_df['Class'] == cls]  # Filter data for the current class
+            cluster_counts = cls_data['Cluster'].value_counts()  # Count instances of the class in each cluster
+            percentages = (cluster_counts / total_per_class[cls]) * 100  # Calculate percentages
+            class_distributions[cls] = percentages
+
+        # Print results
+        print("\n--- Class Distribution Across Clusters ---")
+        for cls, percentages in class_distributions.items():
+            print(f"Class {cls}:")
+            for cluster_id, pct in percentages.items():
+                print(f"  Cluster {cluster_id}: {pct:.2f}% of total instances in Class {cls}")
+
+        return class_distributions
+
+
+    def cluster_split_details(self, method='ward'):
+        """Analyzes the split hierarchy to describe the evolution of clusters."""
+        from scipy.cluster.hierarchy import linkage
+        Z = linkage(self.X, method=method)
+        print("\n--- Cluster Split Details ---")
+        for i in range(len(Z)):
+            cluster_1 = int(Z[i, 0])
+            cluster_2 = int(Z[i, 1])
+            size = int(Z[i, 3])
+            distance = Z[i, 2]
+            print(f"Merge {i+1}: Cluster {cluster_1} + Cluster {cluster_2} -> New Size = {size}, Distance = {distance:.3f}")
+
 
 class ProbabilisticClustering(UnsupervisedAlgorithms):
     def __init__(self, X, feature_names=None):
@@ -369,8 +490,11 @@ if __name__ == '__main__':
     with open(log_file, "w") as log, contextlib.redirect_stdout(log):
         hierarchical_clustering = HierarchicalClustering(features, feature_names)
         hierarchical_clustering.plot_dendrogram(method='ward')
+
+        optimal_clusters = hierarchical_clustering.determine_optimal_clusters_dendrogram_distances()
+
         hierarchical_model, hierarchical_clusters = hierarchical_clustering.hierarchical_clustering(
-            n_clusters=3, linkage_method='ward'
+            n_clusters=optimal_clusters, linkage_method='ward'
         )
 
         # Visualización y análisis
@@ -378,6 +502,11 @@ if __name__ == '__main__':
         hierarchical_clustering.cluster_size_distribution(hierarchical_clusters)
         hierarchical_clustering.cluster_characteristics(hierarchical_clusters, df)
 
+        # Explicability
+        hierarchical_clustering.representative_instances(hierarchical_clusters, df)
+        hierarchical_clustering.class_distribution_per_cluster(hierarchical_clusters, df)
+        hierarchical_clustering.cluster_split_details(method='ward')
+        
     # Probabilistic Clustering
     log_file = os.path.join(path3, "output_log.txt")
     with open(log_file, "w") as log, contextlib.redirect_stdout(log):
