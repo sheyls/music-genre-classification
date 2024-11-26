@@ -7,6 +7,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
+import os
+import contextlib
 
 class MLAlgorithms:
     def __init__(self, X, feature_names=None):
@@ -39,7 +41,8 @@ class UnsupervisedAlgorithms(MLAlgorithms):
         plt.ylabel("Principal Component 2")
         plt.colorbar(label="Cluster")
         plt.grid(True)
-        plt.show()
+        plt.savefig("results/clustering/partitional/pca.png")
+        plt.close()
 
     def cluster_size_distribution(self, clusters):
         """Visualiza la distribución de tamaños de clusters."""
@@ -49,7 +52,9 @@ class UnsupervisedAlgorithms(MLAlgorithms):
         plt.title("Cluster Size Distribution")
         plt.xlabel("Cluster")
         plt.ylabel("Number of Points")
-        plt.show()
+        plt.savefig("results/clustering/partitional/pca.png")
+        plt.close()
+
 
     def feature_importance_analysis(self, clusters):
         """Calcula la importancia de características en la formación de clusters y muestra nombres."""
@@ -65,7 +70,9 @@ class UnsupervisedAlgorithms(MLAlgorithms):
         plt.ylabel("Average Deviation from Global Mean")
         plt.xlabel("Feature")
         plt.grid(True)
-        plt.show()
+        plt.savefig("results/clustering/partitional/pca.png")
+        plt.close()
+
 
     def cluster_characteristics(self, clusters, df):
         """Genera estadísticas descriptivas y visualiza características por cluster."""
@@ -80,7 +87,8 @@ class UnsupervisedAlgorithms(MLAlgorithms):
             plt.xlabel("Cluster")
             plt.ylabel(feature)
             plt.grid(True)
-            plt.show()
+            plt.savefig("results/clustering/partitional/pca.png")
+            plt.close()
 
 
 # Subclase para clustering particional
@@ -102,7 +110,9 @@ class PartitionalClustering(UnsupervisedAlgorithms):
         plt.title("Elbow Method")
         plt.xlabel("Number of Clusters")
         plt.ylabel("WCSS")
-        plt.show()
+        plt.grid(True)
+        plt.savefig("results/clustering/partitional/elbow.png")
+        plt.close()
 
         deltas = [wcss[i] - wcss[i + 1] for i in range(len(wcss) - 1)]
         second_derivative = [deltas[i] - deltas[i + 1] for i in range(len(deltas) - 1)]
@@ -257,37 +267,43 @@ class PartitionalClustering(UnsupervisedAlgorithms):
         return cluster_class_counts
 
 
-# Código principal
 if __name__ == '__main__':
     # Cargar datos
     df = pd.read_csv('dataset/clusters_standard_data.csv')
     features = df.drop(columns=['Class', 'Artist Name', 'Track Name']).values
     feature_names = df.drop(columns=['Class', 'Artist Name', 'Track Name']).columns
 
-    # Instanciar clustering particional
-    partitional_clustering = PartitionalClustering(features, feature_names)
-    optimal_clusters = partitional_clustering.determine_optimal_clusters_elbow()
+    path = "results/clustering/partitional"
+    os.makedirs(path, exist_ok=True)  # Crear directorio si no existe
 
-    # Ejecutar K-Means
-    kmeans, base_clusters = partitional_clustering.kmeans_clustering(n_clusters=optimal_clusters)
+    log_file = os.path.join(path, "output_log.txt")  # Ruta completa al archivo de log
 
-    # Visualizar distribución y características de clusters
-    partitional_clustering.cluster_size_distribution(base_clusters)
-    partitional_clustering.cluster_characteristics(base_clusters, df)
+    with open(log_file, "w") as log, contextlib.redirect_stdout(log):
+        # Cargar datos
+        # Instanciar clustering particional
+        partitional_clustering = PartitionalClustering(features, feature_names)
+        optimal_clusters = partitional_clustering.determine_optimal_clusters_elbow()
 
-    # Analizar importancia de características
-    partitional_clustering.feature_importance_analysis(base_clusters)
+        # Ejecutar K-Means
+        kmeans, base_clusters = partitional_clustering.kmeans_clustering(n_clusters=optimal_clusters)
 
-    # PCA para visualización
-    pca = PCA(n_components=2)
-    features_pca = pca.fit_transform(features)
+        # Visualizar distribución y características de clusters
+        partitional_clustering.cluster_size_distribution(base_clusters)
+        partitional_clustering.cluster_characteristics(base_clusters, df)
 
-    # Visualizar clusters
-    partitional_clustering.visualize_clusters_2d(features_pca, base_clusters, title="Base Clusters")
+        # Analizar importancia de características
+        partitional_clustering.feature_importance_analysis(base_clusters)
 
-    # Obtener clases presentes en cada cluster
-    cluster_class_counts = partitional_clustering.get_classes_and_counts_by_cluster(base_clusters, df)
+        # PCA para visualización
+        pca = PCA(n_components=2)
+        features_pca = pca.fit_transform(features)
 
-    closest_songs = partitional_clustering.get_closest_to_centroid(base_clusters, df, kmeans)
+        # Visualizar clusters
+        partitional_clustering.visualize_clusters_2d(features_pca, base_clusters, title="Base Clusters")
 
-    class_percentages = partitional_clustering.calculate_class_percentage_per_cluster(base_clusters, df)
+        # Obtener clases presentes en cada cluster
+        cluster_class_counts = partitional_clustering.get_classes_and_counts_by_cluster(base_clusters, df)
+
+        closest_songs = partitional_clustering.get_closest_to_centroid(base_clusters, df, kmeans)
+
+        class_percentages = partitional_clustering.calculate_class_percentage_per_cluster(base_clusters, df)
