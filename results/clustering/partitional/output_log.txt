@@ -228,7 +228,7 @@ Cluster 0: Closest song to centroid:
 Cluster 1: Closest song to centroid:
   Artist: Wanda Jackson
   Track: Right Or Wrong
-  Distance to Centroid: 1.274523555311179
+  Distance to Centroid: 1.2745235553111787
 --- Class Percentages per Cluster ---
 Cluster 0:
   Class 10: 85.53% of total instances

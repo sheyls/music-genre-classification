@@ -426,8 +426,6 @@ class HierarchicalClustering(UnsupervisedAlgorithms):
             size = int(Z[i, 3])
             distance = Z[i, 2]
             print(f"Merge {i+1}: Cluster {cluster_1} + Cluster {cluster_2} -> New Size = {size}, Distance = {distance:.3f}")
-
-
 class ProbabilisticClustering(UnsupervisedAlgorithms):
     def __init__(self, X, feature_names=None):
         super().__init__(X, feature_names)
@@ -448,6 +446,64 @@ class ProbabilisticClustering(UnsupervisedAlgorithms):
         df_probabilities.to_csv(output_path, index=False)
         print(f"Saved cluster probabilities to: {output_path}")
         return df_probabilities
+
+    def cluster_characteristics(self, clusters, df):
+        """Generates descriptive statistics for each cluster."""
+        df['Cluster'] = clusters
+        print("--- Cluster Characteristics ---")
+        cluster_stats = df.groupby('Cluster').describe()
+        print(cluster_stats)
+        output_path = os.path.join("results/clustering/probabilistic", "Cluster_Characteristics.csv")
+        cluster_stats.to_csv(output_path)
+        print(f"Saved cluster characteristics to: {output_path}")
+        return cluster_stats
+
+    def feature_importance_analysis(self, gmm_model):
+        """Analyzes feature importance based on the means of GMM components."""
+        print("\n--- Feature Importance ---")
+        cluster_means = pd.DataFrame(gmm_model.means_, columns=self.feature_names)
+        global_mean = np.mean(self.X, axis=0)
+        importance = (cluster_means - global_mean).abs().mean(axis=0).sort_values(ascending=False)
+        print(importance)
+
+        plt.figure(figsize=(10, 6))
+        importance.plot(kind='bar', color='skyblue')
+        plt.title("Feature Importance in Probabilistic Clustering")
+        plt.ylabel("Average Deviation from Global Mean")
+        plt.xlabel("Feature")
+        plt.grid(True)
+        output_path = os.path.join("results/clustering/probabilistic", "Feature_Importance.png")
+        plt.savefig(output_path)
+        plt.close()
+        print(f"Saved feature importance plot to: {output_path}")
+
+    def cluster_class_distribution(self, clusters, original_df):
+        """Calculates class distribution percentages for each cluster."""
+        class_percentages = {}
+        for cluster_id in np.unique(clusters):
+            cluster_data = original_df[original_df['Cluster'] == cluster_id]
+            class_counts = cluster_data['Class'].value_counts()
+            percentages = (class_counts / class_counts.sum()) * 100
+            class_percentages[cluster_id] = percentages
+        print("\n--- Class Percentages per Cluster ---")
+        for cluster_id, percentages in class_percentages.items():
+            print(f"Cluster {cluster_id}:")
+            for cls, pct in percentages.items():
+                print(f"  Class {cls}: {pct:.2f}% of instances in this cluster")
+        return class_percentages
+
+    def cluster_probabilities_visualization(self, df_probabilities):
+        """Visualizes cluster probabilities for interpretability."""
+        plt.figure(figsize=(10, 6))
+        sns.boxplot(data=df_probabilities)
+        plt.title("Distribution of Cluster Probabilities")
+        plt.xlabel("Cluster")
+        plt.ylabel("Probability")
+        output_path = os.path.join("results/clustering/probabilistic", "Cluster_Probabilities_Boxplot.png")
+        plt.savefig(output_path)
+        plt.close()
+        print(f"Saved cluster probabilities visualization to: {output_path}")
+
 
 if __name__ == '__main__':
     # Cargar datos
@@ -510,6 +566,9 @@ if __name__ == '__main__':
     # Probabilistic Clustering
     log_file = os.path.join(path3, "output_log.txt")
     with open(log_file, "w") as log, contextlib.redirect_stdout(log):
+
+        # Cluster probabilities
+
         probabilistic_clustering = ProbabilisticClustering(features, feature_names)
         gmm_model, probabilistic_clusters = probabilistic_clustering.gmm_clustering(n_components=3)
 
@@ -518,3 +577,11 @@ if __name__ == '__main__':
         probabilistic_clustering.cluster_size_distribution(probabilistic_clusters)
         probabilistic_clustering.cluster_characteristics(probabilistic_clusters, df)
         probabilistic_clustering.cluster_probabilities(gmm_model)
+
+        df_probabilities = probabilistic_clustering.cluster_probabilities(gmm_model)
+
+        # Explicability
+        probabilistic_clustering.feature_importance_analysis(gmm_model)
+        probabilistic_clustering.cluster_probabilities_visualization(df_probabilities)
+        probabilistic_clustering.cluster_characteristics(probabilistic_clusters, df)
+        probabilistic_clustering.cluster_class_distribution(probabilistic_clusters, df)
