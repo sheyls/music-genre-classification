@@ -12,20 +12,16 @@ import seaborn as sns
 import os
 import contextlib
 
+from MLAlgorithms import MLAlgorithms
+
 pd.set_option('display.max_columns', None)
 pd.set_option('display.max_rows', None)
 pd.set_option('display.max_colwidth', None)
 
-class MLAlgorithms:
-    def __init__(self, X, feature_names=None):
-        self.X = X
-        # Check if feature_names is not None and contains elements
-        self.feature_names = list(feature_names) if feature_names is not None else [f"Feature {i}" for i in range(X.shape[1])]
-
 
 class UnsupervisedAlgorithms(MLAlgorithms):
-    def __init__(self, X, feature_names=None):
-        super().__init__(X, feature_names)
+    def __init__(self, X, y=None, X_validation=None, y_validation=None, feature_names=None):
+        super().__init__(X, y, X_validation, y_validation, feature_names)
 
     def evaluate_clustering(self, clusters, model_name):
         """Evaluates a clustering model with multiple metrics."""
@@ -105,8 +101,9 @@ class UnsupervisedAlgorithms(MLAlgorithms):
 
 
 class PartitionalClustering(UnsupervisedAlgorithms):
-    def __init__(self, X, feature_names=None):
-        super().__init__(X, feature_names)
+    def __init__(self, X, y=None, X_validation=None, y_validation=None, feature_names=None):
+        super().__init__(X, y, X_validation, y_validation, feature_names)
+
 
     def determine_optimal_clusters_elbow(self, max_clusters=15):
         """Calculates WCSS to find the optimal number of clusters using the Elbow Method."""
@@ -284,8 +281,10 @@ class PartitionalClustering(UnsupervisedAlgorithms):
         return cluster_class_counts
 
 class HierarchicalClustering(UnsupervisedAlgorithms):
-    def __init__(self, X, feature_names=None):
-        super().__init__(X, feature_names)
+
+    def __init__(self, X, y=None, X_validation=None, y_validation=None, feature_names=None):
+        super().__init__(X, y, X_validation, y_validation, feature_names)
+
 
     def hierarchical_clustering(self, n_clusters=3, linkage_method='ward'):
         """Performs Agglomerative Hierarchical Clustering."""
@@ -426,9 +425,12 @@ class HierarchicalClustering(UnsupervisedAlgorithms):
             size = int(Z[i, 3])
             distance = Z[i, 2]
             print(f"Merge {i+1}: Cluster {cluster_1} + Cluster {cluster_2} -> New Size = {size}, Distance = {distance:.3f}")
+
 class ProbabilisticClustering(UnsupervisedAlgorithms):
-    def __init__(self, X, feature_names=None):
-        super().__init__(X, feature_names)
+
+    def __init__(self, X, y=None, X_validation=None, y_validation=None, feature_names=None):
+        super().__init__(X, y, X_validation, y_validation, feature_names)
+
 
     def gmm_clustering(self, n_components=3):
         """Performs clustering using Gaussian Mixture Models."""
@@ -526,7 +528,7 @@ if __name__ == '__main__':
     # Partitional Clustering
     log_file = os.path.join(path1, "output_log.txt")
     with open(log_file, "w") as log, contextlib.redirect_stdout(log):
-        partitional_clustering = PartitionalClustering(features, feature_names)
+        partitional_clustering = PartitionalClustering(features, feature_names=feature_names)
         optimal_clusters = partitional_clustering.determine_optimal_clusters_elbow()
         kmeans_model, base_clusters = partitional_clustering.kmeans_clustering(n_clusters=optimal_clusters)
 
@@ -544,7 +546,7 @@ if __name__ == '__main__':
     # Hierarchical Clustering
     log_file = os.path.join(path2, "output_log.txt")
     with open(log_file, "w") as log, contextlib.redirect_stdout(log):
-        hierarchical_clustering = HierarchicalClustering(features, feature_names)
+        hierarchical_clustering = HierarchicalClustering(features, feature_names=feature_names)
         hierarchical_clustering.plot_dendrogram(method='ward')
 
         optimal_clusters = hierarchical_clustering.determine_optimal_clusters_dendrogram_distances()
@@ -569,7 +571,7 @@ if __name__ == '__main__':
 
         # Cluster probabilities
 
-        probabilistic_clustering = ProbabilisticClustering(features, feature_names)
+        probabilistic_clustering = ProbabilisticClustering(features, feature_names=feature_names)
         gmm_model, probabilistic_clusters = probabilistic_clustering.gmm_clustering(n_components=3)
 
         # Visualización y análisis

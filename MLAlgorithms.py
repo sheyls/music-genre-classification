@@ -7,11 +7,13 @@ import numpy as np
 import pandas as pd
 
 class MLAlgorithms:
-    def __init__(self, X, y, X_validation, y_validation):
+    def __init__(self, X, y=None, X_validation=None, y_validation=None, feature_names=None):
         self.X = X
         self.y = y
         self.X_validation = X_validation
         self.y_validation = y_validation
+
+        self.feature_names = list(feature_names) if feature_names is not None else [f"Feature {i}" for i in range(X.shape[1])]
 
     def cross_validate(self, model, k_folds):
         print(f"Starting cross-validation for {model.__class__.__name__}...")
