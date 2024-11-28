@@ -5,6 +5,8 @@ from sklearn.decomposition import PCA
 from sklearn.metrics import silhouette_score, davies_bouldin_score, calinski_harabasz_score
 from scipy.cluster.hierarchy import dendrogram, linkage
 from sklearn.decomposition import PCA
+from sklearn.metrics import silhouette_score, davies_bouldin_score, calinski_harabasz_score
+from sklearn.metrics import pairwise_distances
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -24,15 +26,65 @@ class UnsupervisedAlgorithms(MLAlgorithms):
         super().__init__(X, y, X_validation, y_validation, feature_names)
 
     def evaluate_clustering(self, clusters, model_name):
-        """Evaluates a clustering model with multiple metrics."""
-        silhouette_avg = silhouette_score(self.X, clusters)
-        db_score = davies_bouldin_score(self.X, clusters)
-        ch_score = calinski_harabasz_score(self.X, clusters)
+        """
+        Evaluates a clustering model with multiple metrics.
+        
+        Parameters:
+            clusters (array-like): Cluster labels for each data point.
+            model_name (str): Name of the clustering model being evaluated.
+        
+        Returns:
+            dict: A dictionary containing all evaluation metrics.
+        """
+        if len(np.unique(clusters)) <= 1:
+            raise ValueError("Clustering must have at least two distinct clusters.")
+        
+        metrics = {}
+        
+        # Silhouette Score
+        metrics["Silhouette Score"] = silhouette_score(self.X, clusters)
+        
+        # Davies-Bouldin Index
+        metrics["Davies-Bouldin Index"] = davies_bouldin_score(self.X, clusters)
+        
+        # Calinski-Harabasz Score
+        metrics["Calinski-Harabasz Score"] = calinski_harabasz_score(self.X, clusters)
+        
+        # Cohesion and Separation
+        def compute_cohesion_separation(X, labels):
+            clusters = np.unique(labels)
+            cohesion = []
+            separation = []
+            
+            # Calculate cohesion (intra-cluster distances)
+            for cluster in clusters:
+                points_in_cluster = X[labels == cluster]
+                distances = pairwise_distances(points_in_cluster)
+                cohesion.append(np.mean(distances))
+            
+            # Calculate separation (distances between centroids)
+            centroids = [X[labels == cluster].mean(axis=0) for cluster in clusters]
+            centroid_distances = pairwise_distances(centroids)
+            np.fill_diagonal(centroid_distances, np.nan)
+            separation = np.nanmean(centroid_distances)
+            
+            return np.mean(cohesion), separation
+        
+        cohesion, separation = compute_cohesion_separation(self.X, clusters)
+        metrics["Cohesion"] = cohesion
+        metrics["Separation"] = separation
+        
+        # Average cluster size
+        unique_clusters, cluster_counts = np.unique(clusters, return_counts=True)
+        metrics["Average Cluster Size"] = np.mean(cluster_counts)
+        
+        # Print metrics
         print(f"--- {model_name} Clustering Evaluation ---")
-        print(f"Silhouette Score: {silhouette_avg:.3f}")
-        print(f"Davies-Bouldin Index: {db_score:.3f}")
-        print(f"Calinski-Harabasz Score: {ch_score:.3f}")
-        return silhouette_avg, db_score, ch_score
+        for metric, value in metrics.items():
+            print(f"{metric}: {value:.3f}")
+        
+        return metrics
+
 
     def visualize_clusters_2d(self, features_pca, clusters, title="Cluster Visualization"):
         """Visualizes clusters in 2D using PCA."""
@@ -506,6 +558,109 @@ class ProbabilisticClustering(UnsupervisedAlgorithms):
         plt.close()
         print(f"Saved cluster probabilities visualization to: {output_path}")
 
+class ClusteringTuner:
+    
+    def __init__(self, features, results_path):
+        self.features = features
+        self.results_path = results_path
+
+
+    def fine_tune_kmeans(self, max_clusters=15):
+        """Fine-tuning KMeans by varying the number of clusters."""
+        results = []
+        for n_clusters in range(2, max_clusters + 1):
+            kmeans = KMeans(n_clusters=n_clusters, random_state=42)
+            clusters = kmeans.fit_predict(self.features)
+            metrics = self.evaluate_clustering(clusters)  # Usamos la función común de evaluación
+            results.append({
+                'Model': 'KMeans',
+                'n_clusters': n_clusters,
+                **metrics  # Incluimos todas las métricas
+            })
+        self.save_results(results, "KMeans_FineTuning.csv", top_filename="KMeans_Top3.csv")
+
+    
+    def fine_tune_hierarchical(self, max_clusters=15, linkage_methods=['ward', 'complete', 'average', 'single']):
+        """Fine-tuning Hierarchical Clustering by varying linkage methods and the number of clusters."""
+        results = []
+        for method in linkage_methods:
+            for n_clusters in range(2, max_clusters + 1):
+                model = AgglomerativeClustering(n_clusters=n_clusters, linkage=method)
+                clusters = model.fit_predict(self.features)
+                metrics = self.evaluate_clustering(clusters)
+                results.append({
+                    'Model': 'Hierarchical',
+                    'Linkage': method,
+                    'n_clusters': n_clusters,
+                    **metrics
+                })
+        self.save_results(results, "Hierarchical_FineTuning.csv", top_filename="Hierarchical_Top3.csv")
+
+    def fine_tune_gmm(self, max_components=15, cov_types=['full', 'tied', 'diag', 'spherical']):
+        """Fine-tuning GMM by varying the number of components and covariance type."""
+        results = []
+        for cov_type in cov_types:
+            for n_components in range(2, max_components + 1):
+                gmm = GaussianMixture(n_components=n_components, covariance_type=cov_type, random_state=42)
+                clusters = gmm.fit_predict(self.features)
+                metrics = self.evaluate_clustering(clusters)
+                results.append({
+                    'Model': 'GMM',
+                    'Covariance Type': cov_type,
+                    'n_components': n_components,
+                    **metrics
+                })
+        self.save_results(results, "GMM_FineTuning.csv", top_filename="GMM_Top3.csv")
+    
+    def evaluate_clustering(self, clusters):
+        """Evaluates a clustering model with multiple metrics."""
+        silhouette_avg = silhouette_score(self.features, clusters)
+        db_score = davies_bouldin_score(self.features, clusters)
+        ch_score = calinski_harabasz_score(self.features, clusters)
+        
+        # Cohesion and Separation
+        def compute_cohesion_separation(X, labels):
+            clusters = np.unique(labels)
+            cohesion = []
+            separation = []
+            for cluster in clusters:
+                points_in_cluster = X[labels == cluster]
+                distances = pairwise_distances(points_in_cluster)
+                cohesion.append(np.mean(distances))
+            centroids = [X[labels == cluster].mean(axis=0) for cluster in clusters]
+            centroid_distances = pairwise_distances(centroids)
+            np.fill_diagonal(centroid_distances, np.nan)
+            separation = np.nanmean(centroid_distances)
+            return np.mean(cohesion), separation
+        
+        cohesion, separation = compute_cohesion_separation(self.features, clusters)
+        
+        return {
+            'Silhouette': silhouette_avg,
+            'Davies-Bouldin': db_score,
+            'Calinski-Harabasz': ch_score,
+            'Cohesion': cohesion,
+            'Separation': separation
+        }
+    
+    def save_results(self, results, filename, top_filename):
+        """Save fine-tuning results to a CSV file and save top 3 models."""
+        df_results = pd.DataFrame(results)
+        
+        # Save all results
+        output_path = os.path.join(self.results_path, filename)
+        df_results.to_csv(output_path, index=False)
+        print(f"Saved fine-tuning results to: {output_path}")
+        
+        # Rank and save top 3 models
+        df_results['Score'] = (
+            df_results['Silhouette'] - df_results['Davies-Bouldin'] + df_results['Calinski-Harabasz']
+        )
+        top_3 = df_results.nlargest(3, 'Score')
+        top_output_path = os.path.join(self.results_path, top_filename)
+        top_3.to_csv(top_output_path, index=False)
+        print(f"Saved top 3 models to: {top_output_path}")
+
 
 if __name__ == '__main__':
     # Cargar datos
@@ -587,3 +742,10 @@ if __name__ == '__main__':
         probabilistic_clustering.cluster_probabilities_visualization(df_probabilities)
         probabilistic_clustering.cluster_characteristics(probabilistic_clusters, df)
         probabilistic_clustering.cluster_class_distribution(probabilistic_clusters, df)
+
+    tuner = ClusteringTuner(features=features, results_path="./results/clustering/fine_tuning")
+
+    tuner.fine_tune_kmeans(max_clusters=12)
+    tuner.fine_tune_hierarchical(max_clusters=12)
+    tuner.fine_tune_gmm(max_components=12)
+
