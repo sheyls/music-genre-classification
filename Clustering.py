@@ -20,7 +20,6 @@ pd.set_option('display.max_columns', None)
 pd.set_option('display.max_rows', None)
 pd.set_option('display.max_colwidth', None)
 
-
 class UnsupervisedAlgorithms(MLAlgorithms):
     def __init__(self, X, y=None, X_validation=None, y_validation=None, feature_names=None):
         super().__init__(X, y, X_validation, y_validation, feature_names)
@@ -86,8 +85,8 @@ class UnsupervisedAlgorithms(MLAlgorithms):
         return metrics
 
 
-    def visualize_clusters_2d(self, features_pca, clusters, title="Cluster Visualization"):
-        """Visualizes clusters in 2D using PCA."""
+    def visualize_clusters_2d(self, features_pca, clusters, title="Cluster Visualization", cluster_folder=None):
+        """Visualizes clusters in 2D using PCA and saves the output in the specified folder."""
         plt.figure(figsize=(10, 7))
         plt.scatter(features_pca[:, 0], features_pca[:, 1], c=clusters, cmap="viridis", s=50, alpha=0.7)
         plt.title(title)
@@ -95,20 +94,40 @@ class UnsupervisedAlgorithms(MLAlgorithms):
         plt.ylabel("Principal Component 2")
         plt.colorbar(label="Cluster")
         plt.grid(True)
-        output_path = os.path.join("results/clustering/partitional", f"{title.replace(' ', '_')}.png")
+
+        # Define output path
+        if cluster_folder:
+            os.makedirs(cluster_folder, exist_ok=True)  # Ensure the folder exists
+            output_path = os.path.join(cluster_folder, f"{title.replace(' ', '_')}.png")
+        else:
+            output_path = os.path.join("results/clustering/partitional", f"{title.replace(' ', '_')}.png")
+        
         plt.savefig(output_path)
         plt.close()
         print(f"Saved: {output_path}")
 
-    def cluster_size_distribution(self, clusters):
-        """Visualizes the distribution of cluster sizes."""
+
+    def cluster_size_distribution(self, clusters, cluster_folder=None):
+        """
+        Visualizes the distribution of cluster sizes and optionally saves it in a specific folder.
+        
+        Parameters:
+            clusters (array-like): Cluster labels for the data points.
+            cluster_folder (str, optional): Folder to save the visualization. Defaults to None.
+        """
         unique, counts = np.unique(clusters, return_counts=True)
         plt.figure(figsize=(8, 5))
         plt.bar(unique, counts, color='skyblue')
         plt.title("Cluster Size Distribution")
         plt.xlabel("Cluster")
         plt.ylabel("Number of Points")
-        output_path = os.path.join("results/clustering/partitional", "Cluster_Size_Distribution.png")
+        
+        if cluster_folder:
+            os.makedirs(cluster_folder, exist_ok=True)
+            output_path = os.path.join(cluster_folder, "Cluster_Size_Distribution.png")
+        else:
+            output_path = os.path.join("results/clustering", "Cluster_Size_Distribution.png")
+        
         plt.savefig(output_path)
         plt.close()
         print(f"Saved: {output_path}")
@@ -132,12 +151,23 @@ class UnsupervisedAlgorithms(MLAlgorithms):
         plt.close()
         print(f"Saved: {output_path}")
 
-    def cluster_characteristics(self, clusters, df):
-        """Generates descriptive statistics and visualizes characteristics by cluster."""
+    def cluster_characteristics(self, df, clusters, cluster_class):
+        """
+        Generates descriptive statistics and visualizes characteristics by cluster.
+        Ensures the DataFrame has the correct structure and includes feature names.
+        """
+        # Ensure df is a DataFrame with the correct number of columns
+        if not isinstance(df, pd.DataFrame):
+            df = pd.DataFrame(df, columns=self.feature_names)
+
+        # Add cluster labels
         df['Cluster'] = clusters
+
+        # Print descriptive statistics by cluster
         print("--- Cluster Statistics ---")
         print(df.groupby('Cluster').describe())
 
+        # Visualize each feature by cluster
         for feature in self.feature_names:
             formatted_feature = feature.replace(" ", "_").replace("/", "_")
             plt.figure(figsize=(8, 5))
@@ -146,16 +176,80 @@ class UnsupervisedAlgorithms(MLAlgorithms):
             plt.xlabel("Cluster")
             plt.ylabel(feature)
             plt.grid(True)
-            output_path = os.path.join(f"results/clustering/partitional/{formatted_feature}.png")
+            output_path = os.path.join(f"results/clustering/{cluster_class}/{formatted_feature}.png")
             plt.savefig(output_path)
             plt.close()
             print(f"Saved: {output_path}")
+
+    def save_results(self, results, filename, cluster_folder):
+        """Save fine-tuning results to a CSV file within the cluster-specific folder."""
+        os.makedirs(cluster_folder, exist_ok=True)  # Crear carpeta si no existe
+        output_path = os.path.join(cluster_folder, filename)
+        df_results = pd.DataFrame(results)
+        df_results.to_csv(output_path, index=False)
+        print(f"Saved results to: {output_path}")
+
+    def save_visualization(self, plt, filename, cluster_folder):
+        """Save visualizations to the appropriate cluster-specific folder."""
+        os.makedirs(cluster_folder, exist_ok=True)  # Crear carpeta si no existe
+        output_path = os.path.join(cluster_folder, filename)
+        plt.savefig(output_path)
+        plt.close()
+        print(f"Saved: {output_path}")
 
 
 class PartitionalClustering(UnsupervisedAlgorithms):
     def __init__(self, X, y=None, X_validation=None, y_validation=None, feature_names=None):
         super().__init__(X, y, X_validation, y_validation, feature_names)
 
+    def fine_tune(self, max_clusters=15):
+        """Fine-tuning KMeans by varying the number of clusters."""
+        results = []
+        for n_clusters in range(2, max_clusters + 1):
+            cluster_folder = f"results/clustering/partitional/{n_clusters}"
+            kmeans = KMeans(n_clusters=n_clusters, random_state=42)
+            clusters = kmeans.fit_predict(self.X)
+            metrics = self.evaluate_clustering(clusters, "K-Means")
+            results.append({'Model': 'K-Means', 'n_clusters': n_clusters, **metrics})
+
+        # Guardar resultados completos y obtener top 3
+        df_results = pd.DataFrame(results)
+        df_results['Score'] = df_results['Silhouette Score'] - df_results['Davies-Bouldin Index'] + df_results['Calinski-Harabasz Score']
+        top_3 = df_results.nlargest(3, 'Score')
+        self.save_results(top_3, "KMeans_FineTuning.csv", "results/clustering/partitional")
+        print(top_3)
+        return top_3
+
+    def cluster_size_distribution(self, clusters, cluster_folder):
+        """Visualizes the distribution of cluster sizes and saves the plot."""
+        unique, counts = np.unique(clusters, return_counts=True)
+        plt.figure(figsize=(8, 5))
+        plt.bar(unique, counts, color='skyblue')
+        plt.title("Cluster Size Distribution")
+        plt.xlabel("Cluster")
+        plt.ylabel("Number of Points")
+        self.save_visualization(plt, "Cluster_Size_Distribution.png", cluster_folder)
+
+    def analyze_top_models(self, top_models, features_pca, original_df):
+        """Visualizes and analyzes the top 3 models."""
+        for _, model_info in top_models.iterrows():
+            n_clusters = model_info['n_clusters']
+            cluster_folder = f"results/clustering/partitional/{n_clusters}"
+            print(f"Analyzing K-Means with n_clusters={n_clusters}")
+
+            # Create the model and predict clusters
+            kmeans = KMeans(n_clusters=n_clusters, random_state=42)
+            clusters = kmeans.fit_predict(self.X)
+
+            # Visualizations and analysis
+            self.visualize_clusters_2d(features_pca, clusters, title=f"KMeans_{n_clusters}_Clusters", cluster_folder=cluster_folder)
+            self.cluster_size_distribution(clusters, cluster_folder=cluster_folder)
+
+            # Use the original DataFrame for cluster characteristics
+            self.cluster_characteristics(df=original_df, clusters=clusters, cluster_class="partitional")
+
+            # Save model details
+            self.save_results([model_info.to_dict()], filename=f"Model_Details.csv", cluster_folder=cluster_folder)
 
     def determine_optimal_clusters_elbow(self, max_clusters=15):
         """Calculates WCSS to find the optimal number of clusters using the Elbow Method."""
@@ -336,7 +430,40 @@ class HierarchicalClustering(UnsupervisedAlgorithms):
 
     def __init__(self, X, y=None, X_validation=None, y_validation=None, feature_names=None):
         super().__init__(X, y, X_validation, y_validation, feature_names)
+    
+    def fine_tune(self, max_clusters=15, linkage_methods=['ward', 'complete', 'average', 'single']):
+        """Fine-tuning Hierarchical Clustering by varying linkage methods and the number of clusters."""
+        results = []
+        features_pca = PCA(n_components=2).fit_transform(self.X)  # Asegurar que PCA esté calculado
+        for method in linkage_methods:
+            for n_clusters in range(2, max_clusters + 1):
+                cluster_folder = f"results/clustering/hierarchical/{n_clusters}"
+                #os.makedirs(cluster_folder, exist_ok=True)
+                model = AgglomerativeClustering(n_clusters=n_clusters, linkage=method)
+                clusters = model.fit_predict(self.X)
+                metrics = self.evaluate_clustering(clusters, "Hierarchical")
+                results.append({'Model': 'Hierarchical', 'Linkage': method, 'n_clusters': n_clusters, **metrics})
+                
+        df_results = pd.DataFrame(results)
+        df_results['Score'] = df_results['Silhouette Score'] - df_results['Davies-Bouldin Index'] + df_results['Calinski-Harabasz Score']
+        top_3 = df_results.nlargest(3, 'Score')
+        self.save_results(top_3, "Hierarchical_FineTuning.csv", cluster_folder="results/clustering/hierarchical")
+   
+        return top_3
 
+    def analyze_top_models(self, top_models, features_pca, df):
+        """Visualizes and analyzes the top 3 models."""
+        for _, model_info in top_models.iterrows():
+            n_clusters = model_info['n_clusters']
+            method = model_info['Linkage']
+            print(f"Analyzing Hierarchical with n_clusters={n_clusters} and linkage={method}")
+            model = AgglomerativeClustering(n_clusters=n_clusters, linkage=method)
+            clusters = model.fit_predict(self.X)
+
+            # Visualizations and analysis
+            self.visualize_clusters_2d(features_pca, clusters, title=f"Hierarchical_{method}_{n_clusters}_Clusters")
+            self.cluster_size_distribution(clusters)
+            self.cluster_characteristics(df, clusters, cluster_class="hierarchical")
 
     def hierarchical_clustering(self, n_clusters=3, linkage_method='ward'):
         """Performs Agglomerative Hierarchical Clustering."""
@@ -483,6 +610,43 @@ class ProbabilisticClustering(UnsupervisedAlgorithms):
     def __init__(self, X, y=None, X_validation=None, y_validation=None, feature_names=None):
         super().__init__(X, y, X_validation, y_validation, feature_names)
 
+    def fine_tune(self, max_components=15, cov_types=['full', 'tied', 'diag', 'spherical']):
+        """Fine-tuning GMM by varying the number of components and covariance type."""
+        results = []
+        for cov_type in cov_types:
+            for n_components in range(2, max_components + 1):
+                cluster_folder = f"results/clustering/probabilistic/{n_components}"
+                gmm = GaussianMixture(n_components=n_components, covariance_type=cov_type, random_state=42)
+                clusters = gmm.fit_predict(self.X)
+                metrics = self.evaluate_clustering(clusters, "Probabilistic")
+                results.append({'Model': 'GMM', 'Covariance Type': cov_type, 'n_components': n_components, **metrics})
+
+        # Guardar resultados completos y obtener top 3
+        df_results = pd.DataFrame(results)
+        df_results['Score'] = df_results['Silhouette Score'] - df_results['Davies-Bouldin Index'] + df_results['Calinski-Harabasz Score']
+        top_3 = df_results.nlargest(3, 'Score')
+        self.save_results(top_3, "GMM_FineTuning.csv", "results/clustering/probabilistic")
+        return top_3
+
+    def analyze_top_models(self, top_models, features_pca, df):
+        """Visualizes and analyzes the top 3 models."""
+        for _, model_info in top_models.iterrows():
+            n_components = model_info['n_components']  # Corrected from 'n_clusters' to 'n_components'
+            cov_type = model_info['Covariance Type']
+            print(f"Analyzing GMM with n_components={n_components} and covariance_type={cov_type}")
+
+            # Create the model and predict clusters
+            gmm = GaussianMixture(n_components=n_components, covariance_type=cov_type, random_state=42)
+            clusters = gmm.fit_predict(self.X)
+
+            # Visualizations and analysis
+            cluster_folder = f"results/clustering/probabilistic/{n_components}"
+            self.visualize_clusters_2d(features_pca, clusters, title=f"GMM_{cov_type}_{n_components}_Clusters", cluster_folder=cluster_folder)
+            self.cluster_size_distribution(clusters, cluster_folder=cluster_folder)
+            self.cluster_characteristics(df=df, clusters=clusters, cluster_class="probabilistic")  # Fixed
+
+            # Save model details
+            self.save_results([model_info.to_dict()], filename=f"Model_Details.csv", cluster_folder=cluster_folder)
 
     def gmm_clustering(self, n_components=3):
         """Performs clustering using Gaussian Mixture Models."""
@@ -501,16 +665,6 @@ class ProbabilisticClustering(UnsupervisedAlgorithms):
         print(f"Saved cluster probabilities to: {output_path}")
         return df_probabilities
 
-    def cluster_characteristics(self, clusters, df):
-        """Generates descriptive statistics for each cluster."""
-        df['Cluster'] = clusters
-        print("--- Cluster Characteristics ---")
-        cluster_stats = df.groupby('Cluster').describe()
-        print(cluster_stats)
-        output_path = os.path.join("results/clustering/probabilistic", "Cluster_Characteristics.csv")
-        cluster_stats.to_csv(output_path)
-        print(f"Saved cluster characteristics to: {output_path}")
-        return cluster_stats
 
     def feature_importance_analysis(self, gmm_model):
         """Analyzes feature importance based on the means of GMM components."""
@@ -558,109 +712,6 @@ class ProbabilisticClustering(UnsupervisedAlgorithms):
         plt.close()
         print(f"Saved cluster probabilities visualization to: {output_path}")
 
-class ClusteringTuner:
-    
-    def __init__(self, features, results_path):
-        self.features = features
-        self.results_path = results_path
-
-
-    def fine_tune_kmeans(self, max_clusters=15):
-        """Fine-tuning KMeans by varying the number of clusters."""
-        results = []
-        for n_clusters in range(2, max_clusters + 1):
-            kmeans = KMeans(n_clusters=n_clusters, random_state=42)
-            clusters = kmeans.fit_predict(self.features)
-            metrics = self.evaluate_clustering(clusters)  # Usamos la función común de evaluación
-            results.append({
-                'Model': 'KMeans',
-                'n_clusters': n_clusters,
-                **metrics  # Incluimos todas las métricas
-            })
-        self.save_results(results, "KMeans_FineTuning.csv", top_filename="KMeans_Top3.csv")
-
-    
-    def fine_tune_hierarchical(self, max_clusters=15, linkage_methods=['ward', 'complete', 'average', 'single']):
-        """Fine-tuning Hierarchical Clustering by varying linkage methods and the number of clusters."""
-        results = []
-        for method in linkage_methods:
-            for n_clusters in range(2, max_clusters + 1):
-                model = AgglomerativeClustering(n_clusters=n_clusters, linkage=method)
-                clusters = model.fit_predict(self.features)
-                metrics = self.evaluate_clustering(clusters)
-                results.append({
-                    'Model': 'Hierarchical',
-                    'Linkage': method,
-                    'n_clusters': n_clusters,
-                    **metrics
-                })
-        self.save_results(results, "Hierarchical_FineTuning.csv", top_filename="Hierarchical_Top3.csv")
-
-    def fine_tune_gmm(self, max_components=15, cov_types=['full', 'tied', 'diag', 'spherical']):
-        """Fine-tuning GMM by varying the number of components and covariance type."""
-        results = []
-        for cov_type in cov_types:
-            for n_components in range(2, max_components + 1):
-                gmm = GaussianMixture(n_components=n_components, covariance_type=cov_type, random_state=42)
-                clusters = gmm.fit_predict(self.features)
-                metrics = self.evaluate_clustering(clusters)
-                results.append({
-                    'Model': 'GMM',
-                    'Covariance Type': cov_type,
-                    'n_components': n_components,
-                    **metrics
-                })
-        self.save_results(results, "GMM_FineTuning.csv", top_filename="GMM_Top3.csv")
-    
-    def evaluate_clustering(self, clusters):
-        """Evaluates a clustering model with multiple metrics."""
-        silhouette_avg = silhouette_score(self.features, clusters)
-        db_score = davies_bouldin_score(self.features, clusters)
-        ch_score = calinski_harabasz_score(self.features, clusters)
-        
-        # Cohesion and Separation
-        def compute_cohesion_separation(X, labels):
-            clusters = np.unique(labels)
-            cohesion = []
-            separation = []
-            for cluster in clusters:
-                points_in_cluster = X[labels == cluster]
-                distances = pairwise_distances(points_in_cluster)
-                cohesion.append(np.mean(distances))
-            centroids = [X[labels == cluster].mean(axis=0) for cluster in clusters]
-            centroid_distances = pairwise_distances(centroids)
-            np.fill_diagonal(centroid_distances, np.nan)
-            separation = np.nanmean(centroid_distances)
-            return np.mean(cohesion), separation
-        
-        cohesion, separation = compute_cohesion_separation(self.features, clusters)
-        
-        return {
-            'Silhouette': silhouette_avg,
-            'Davies-Bouldin': db_score,
-            'Calinski-Harabasz': ch_score,
-            'Cohesion': cohesion,
-            'Separation': separation
-        }
-    
-    def save_results(self, results, filename, top_filename):
-        """Save fine-tuning results to a CSV file and save top 3 models."""
-        df_results = pd.DataFrame(results)
-        
-        # Save all results
-        output_path = os.path.join(self.results_path, filename)
-        df_results.to_csv(output_path, index=False)
-        print(f"Saved fine-tuning results to: {output_path}")
-        
-        # Rank and save top 3 models
-        df_results['Score'] = (
-            df_results['Silhouette'] - df_results['Davies-Bouldin'] + df_results['Calinski-Harabasz']
-        )
-        top_3 = df_results.nlargest(3, 'Score')
-        top_output_path = os.path.join(self.results_path, top_filename)
-        top_3.to_csv(top_output_path, index=False)
-        print(f"Saved top 3 models to: {top_output_path}")
-
 
 if __name__ == '__main__':
     # Cargar datos
@@ -668,84 +719,24 @@ if __name__ == '__main__':
     features = df.drop(columns=['Class', 'Artist Name', 'Track Name']).values
     feature_names = df.drop(columns=['Class', 'Artist Name', 'Track Name']).columns
 
-    # Crear carpetas para resultados
-    path1 = "results/clustering/partitional"
-    path2 = "results/clustering/hierarchical"
-    path3 = "results/clustering/probabilistic"
-    os.makedirs(path1, exist_ok=True)
-    os.makedirs(path2, exist_ok=True)
-    os.makedirs(path3, exist_ok=True)
-
-    # Configuración de PCA para todas las visualizaciones
+    # Configuración de PCA para visualización
     pca = PCA(n_components=2)
     features_pca = pca.fit_transform(features)
 
     # Partitional Clustering
-    log_file = os.path.join(path1, "output_log.txt")
-    with open(log_file, "w") as log, contextlib.redirect_stdout(log):
-        partitional_clustering = PartitionalClustering(features, feature_names=feature_names)
-        optimal_clusters = partitional_clustering.determine_optimal_clusters_elbow()
-        kmeans_model, base_clusters = partitional_clustering.kmeans_clustering(n_clusters=optimal_clusters)
-
-        # Visualización y análisis
-        partitional_clustering.visualize_clusters_2d(features_pca, base_clusters, title="Base Clusters")
-        partitional_clustering.cluster_size_distribution(base_clusters)
-        partitional_clustering.cluster_characteristics(base_clusters, df)
-        partitional_clustering.feature_importance_analysis(base_clusters)
-
-        # Explicability
-        cluster_class_counts = partitional_clustering.get_classes_and_counts_by_cluster(base_clusters, df)
-        closest_songs = partitional_clustering.get_closest_to_centroid(base_clusters, df, kmeans_model)
-        class_percentages = partitional_clustering.calculate_class_percentage_per_cluster(base_clusters, df)
+    print("Fine-Tuning KMeans...")
+    partitional_clustering = PartitionalClustering(features, feature_names=feature_names)
+    kmeans_top_3 = partitional_clustering.fine_tune(max_clusters=12)
+    partitional_clustering.analyze_top_models(kmeans_top_3, features_pca, df)
 
     # Hierarchical Clustering
-    log_file = os.path.join(path2, "output_log.txt")
-    with open(log_file, "w") as log, contextlib.redirect_stdout(log):
-        hierarchical_clustering = HierarchicalClustering(features, feature_names=feature_names)
-        hierarchical_clustering.plot_dendrogram(method='ward')
+    print("Fine-Tuning Hierarchical...")
+    hierarchical_clustering = HierarchicalClustering(features, feature_names=feature_names)
+    hierarchical_top_3 = hierarchical_clustering.fine_tune(max_clusters=12)
+    hierarchical_clustering.analyze_top_models(hierarchical_top_3, features_pca, df)
 
-        optimal_clusters = hierarchical_clustering.determine_optimal_clusters_dendrogram_distances()
-
-        hierarchical_model, hierarchical_clusters = hierarchical_clustering.hierarchical_clustering(
-            n_clusters=optimal_clusters, linkage_method='ward'
-        )
-
-        # Visualización y análisis
-        hierarchical_clustering.visualize_clusters_2d(features_pca, hierarchical_clusters, title="Hierarchical Clusters")
-        hierarchical_clustering.cluster_size_distribution(hierarchical_clusters)
-        hierarchical_clustering.cluster_characteristics(hierarchical_clusters, df)
-
-        # Explicability
-        hierarchical_clustering.representative_instances(hierarchical_clusters, df)
-        hierarchical_clustering.class_distribution_per_cluster(hierarchical_clusters, df)
-        hierarchical_clustering.cluster_split_details(method='ward')
-        
     # Probabilistic Clustering
-    log_file = os.path.join(path3, "output_log.txt")
-    with open(log_file, "w") as log, contextlib.redirect_stdout(log):
-
-        # Cluster probabilities
-
-        probabilistic_clustering = ProbabilisticClustering(features, feature_names=feature_names)
-        gmm_model, probabilistic_clusters = probabilistic_clustering.gmm_clustering(n_components=3)
-
-        # Visualización y análisis
-        probabilistic_clustering.visualize_clusters_2d(features_pca, probabilistic_clusters, title="Probabilistic Clusters")
-        probabilistic_clustering.cluster_size_distribution(probabilistic_clusters)
-        probabilistic_clustering.cluster_characteristics(probabilistic_clusters, df)
-        probabilistic_clustering.cluster_probabilities(gmm_model)
-
-        df_probabilities = probabilistic_clustering.cluster_probabilities(gmm_model)
-
-        # Explicability
-        probabilistic_clustering.feature_importance_analysis(gmm_model)
-        probabilistic_clustering.cluster_probabilities_visualization(df_probabilities)
-        probabilistic_clustering.cluster_characteristics(probabilistic_clusters, df)
-        probabilistic_clustering.cluster_class_distribution(probabilistic_clusters, df)
-
-    tuner = ClusteringTuner(features=features, results_path="./results/clustering/fine_tuning")
-
-    tuner.fine_tune_kmeans(max_clusters=12)
-    tuner.fine_tune_hierarchical(max_clusters=12)
-    tuner.fine_tune_gmm(max_components=12)
-
+    print("Fine-Tuning GMM...")
+    probabilistic_clustering = ProbabilisticClustering(features, feature_names=feature_names)
+    gmm_top_3 = probabilistic_clustering.fine_tune(max_components=12)
+    probabilistic_clustering.analyze_top_models(gmm_top_3, features_pca, df)
